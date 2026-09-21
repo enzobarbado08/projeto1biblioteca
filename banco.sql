@@ -18,7 +18,9 @@ CREATE TABLE professor (
     id_professor INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
     telefone VARCHAR(20) NOT NULL,
-    email VARCHAR(100) NOT NULL);
+    email VARCHAR(100) NOT NULL
+    );
+    
     CREATE TABLE bibliotecario (
     id_bibliotecario INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
@@ -26,9 +28,9 @@ CREATE TABLE professor (
 );
 CREATE TABLE emprestimo (
     id_emprestimo INT AUTO_INCREMENT PRIMARY KEY,
-    id_aluno INT,
-    id_livro INT,
-    id_bibliotecario INT,
+    id_aluno INT NOT NULL,
+    id_livro INT NOT NULL,
+    id_bibliotecario INT NOT NULL,
     data_emprestimo DATE NOT NULL,
     data_prevista_devolucao DATE NOT NULL,
     data_devolucao DATE,
@@ -39,6 +41,7 @@ CREATE TABLE emprestimo (
     FOREIGN KEY (id_livro) REFERENCES livro(id_livro),
     FOREIGN KEY (id_bibliotecario) REFERENCES bibliotecario(id_bibliotecario)
 );
+
 CREATE TABLE usuario (
 
 
@@ -54,9 +57,8 @@ CREATE TABLE usuario (
     FOREIGN KEY (id_aluno) REFERENCES aluno(id_aluno),
     FOREIGN KEY (id_professor ) REFERENCES professor(id_professor ),
     FOREIGN KEY (id_bibliotecario) REFERENCES bibliotecario(id_bibliotecario)
-
-
 );
+
 INSERT INTO aluno(nome, serie, turma, telefone) 
 VALUES("Murilo", "1 ANO", '1B', '4002-8922'),
 ('Sâmela', '1 ANO', '1B', '9293-9900'),
@@ -91,11 +93,11 @@ SELECT * FROM professor;
 
 INSERT INTO usuario (nome, email, senha, perfil, status, id_aluno, id_professor, id_bibliotecario)
 VALUES 
-('Cláudia', 'ClaudiaCEMAP@escola.pr.gov.br', 'senha123', 'Professor', 'Ativo', 1, 1, 1),
-('Rodrigo', 'Rodrigo.Dias@escola.pr.gov.br', 'senha123', 'Professor', 'Ativo', 1, 2, 1),
+('Cláudia', 'ClaudiaCEMAP@escola.pr.gov.br', 'ClaudIA', 'Professor', 'Ativo', 1, 1, 1),
+('Rodrigo', 'Rodrigo.Dias@escola.pr.gov.br', 'R0dr1go', 'Professor', 'Ativo', 1, 2, 1),
 ('Nayara', 'Nay.Oliveira@gmail.com', 'senha123', 'Professor', 'Ativo', 1, 3, 1),
-('Ronaldo', 'Ronaldo@escola.pr.gov.br', 'senha123', 'Professor', 'Ativo', 1, 4, 1),
-('Tyago', 'Tyago@escola.pr.gov.br', 'senha123', 'Professor', 'Ativo', 1, 5, 1);
+('Eva', 'eva.pitarelli@escola.pr.gov.br', 'Loh1810', 'Professor', 'Ativo', 1, 4, 1),
+('Tyago', 'Tyago@escola.pr.gov.br', 'Ty@g0', 'Professor', 'Ativo', 1, 5, 1);
 
 INSERT INTO emprestimo (id_aluno, id_livro, id_bibliotecario, data_emprestimo, data_prevista_devolucao, data_devolucao, status)
 VALUES ('1','2', '3', '2026-07-09', '2026-08-09', '2026-08-09', 'devolvido'),
