@@ -64,7 +64,7 @@ VALUES("Murilo", "1 ANO", '1B', '4002-8922'),
 ('Sâmela', '1 ANO', '1B', '9293-9900'),
 ('Lucas', '1 ANO', '1B', '8880-4499'),
 ('Júlia', '1 ANO', '1B', '9939-4000'),
-('Beatriz', '1 ANO', '1B', 9915-6110);
+('Beatriz', '1 ANO', '1B', '9915-6110');
 
 INSERT INTO bibliotecario(nome, email)
 VALUES('Cláudia','ClaudiaCEMAP@escola.pr.gov.br'),
