@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, flash
 import mysql.connector
 from config import DB_CONFIG
+from datetime import datetime
+
 
 
 app = Flask(__name__)
@@ -48,6 +50,15 @@ def cadastrar_aluno():
         turma = request.form["turma"]
         telefone = request.form["telefone"]
 
+        if len(nome.strip()) < 3:
+            flash("O nome do aluno deve ter pelo menos 3 caracteres.", "erro")
+            return redirect("/alunos/novo")
+
+
+        if telefone and len(telefone.strip()) < 8:
+            flash("O telefone deve ter pelo menos 8 caracteres.", "erro")
+            return redirect("/alunos/novo")
+
 
         conexao = conectar()
         cursor = conexao.cursor()
@@ -76,6 +87,7 @@ def cadastrar_aluno():
     except Exception as erro:
         flash(f"Erro ao cadastrar aluno: {erro}", "erro")
         return redirect("/alunos")
+
 
 
 # Rotas para livros
@@ -109,6 +121,15 @@ def cadastrar_livro():
         autor = request.form["autor"]
         categoria = request.form["categoria"]
 
+        if len(titulo.strip()) < 2:
+            flash("O título do livro deve ter pelo menos 2 caracteres.", "erro")
+            return redirect("/livros/novo")
+
+
+        if len(autor.strip()) < 3:
+            flash("O nome do autor deve ter pelo menos 3 caracteres.", "erro")
+            return redirect("/livros/novo")
+
         conexao = conectar()
         cursor = conexao.cursor()
 
@@ -121,6 +142,8 @@ def cadastrar_livro():
 
         cursor.execute(sql, valores)
         conexao.commit()
+        flash("Livro cadastrado com sucesso!", "sucesso")
+
 
         cursor.close()
         conexao.close()
@@ -161,6 +184,16 @@ def cadastrar_bibliotecario():
         nome = request.form["nome"]
         email = request.form["email"]
 
+        if len(nome.strip()) < 3:
+            flash("O nome do bibliotecário deve ter pelo menos 3 caracteres.", "erro")
+            return redirect("/bibliotecarios/novo")
+
+
+        if "@" not in email or "." not in email:
+            flash("Informe um e-mail válido.", "erro")
+            return redirect("/bibliotecarios/novo")
+
+
         conexao = conectar()
         cursor = conexao.cursor()
 
@@ -173,6 +206,8 @@ def cadastrar_bibliotecario():
 
         cursor.execute(sql, valores)
         conexao.commit()
+        flash("Bibliotecário cadastrado com sucesso!", "sucesso")
+
 
         cursor.close()
         conexao.close()
@@ -270,11 +305,40 @@ def cadastrar_emprestimo():
         id_bibliotecario = request.form["id_bibliotecario"]
         data_emprestimo = request.form["data_emprestimo"]
         data_prevista_devolucao = request.form["data_prevista_devolucao"]
+        data_emp = datetime.strptime(data_emprestimo, "%Y-%m-%d")
+        data_dev = datetime.strptime(data_prevista_devolucao, "%Y-%m-%d")
+
+
+        if data_dev < data_emp:
+            flash("A data prevista de devolução não pode ser menor que a data do empréstimo.", "erro")
+            return redirect("/emprestimos/novo")
+
 
 
         conexao = conectar()
         cursor = conexao.cursor()
 
+        cursor.execute(
+            "SELECT status FROM livro WHERE id_livro = %s",
+            (id_livro,)
+        )
+
+
+        livro = cursor.fetchone()
+
+
+        if livro is None:
+            flash("Livro não encontrado.", "erro")
+            cursor.close()
+            conexao.close()
+            return redirect("/emprestimos/novo")
+
+
+        if livro[0] != "Disponível":
+            flash("Este livro não está disponível para empréstimo.", "erro")
+            cursor.close()
+            conexao.close()
+            return redirect("/emprestimos/novo")
 
         sql = """
             INSERT INTO emprestimo (
@@ -309,6 +373,9 @@ def cadastrar_emprestimo():
 
 
         conexao.commit()
+        flash("Empréstimo registrado com sucesso!", "sucesso")
+       
+
 
 
         cursor.close()
@@ -319,7 +386,8 @@ def cadastrar_emprestimo():
 
 
     except Exception as erro:
-        return f"Erro ao cadastrar empréstimo: {erro}"
+        flash("Erro ao registrar empréstimo.", "erro")
+        return redirect("/emprestimos")
 
 # Rota para devolução de livro
 @app.route("/emprestimos/devolver/<int:id_emprestimo>")
@@ -364,6 +432,8 @@ def devolver_livro(id_emprestimo):
 
 
             conexao.commit()
+            flash("Livro devolvido com sucesso!", "sucesso")
+
 
 
         cursor.close()
@@ -472,11 +542,14 @@ def excluir_aluno(id_aluno):
         conexao.close()
 
 
+        flash("Aluno excluído com sucesso!", "sucesso")
         return redirect("/alunos")
 
 
     except Exception as erro:
-        return f"Erro ao excluir aluno: {erro}"
+        flash("Não foi possível excluir o aluno. Verifique se ele possui empréstimos cadastrados.", "erro")
+        return redirect("/alunos")
+
 
 @app.route("/livros/editar/<int:id_livro>")
 def editar_livro(id_livro):
@@ -535,6 +608,8 @@ def atualizar_livro(id_livro):
 
         cursor.execute(sql, valores)
         conexao.commit()
+        flash("Livro atualizado com sucesso!", "sucesso")
+
 
 
         cursor.close()
@@ -564,6 +639,7 @@ def excluir_livro(id_livro):
 
 
         conexao.commit()
+        flash("Livro excluído com sucesso!", "sucesso")
 
 
         cursor.close()
@@ -574,7 +650,9 @@ def excluir_livro(id_livro):
 
 
     except Exception as erro:
-        return f"Erro ao excluir livro: {erro}"
+        flash("Não foi possível excluir o livro. Verifique se ele possui empréstimos cadastrados.", "erro")
+        return redirect("/livros")
+
 
 
 @app.route("/bibliotecarios/editar/<int:id_bibliotecario>")
@@ -633,6 +711,8 @@ def atualizar_bibliotecario(id_bibliotecario):
 
         cursor.execute(sql, valores)
         conexao.commit()
+        flash("Bibliotecário atualizado com sucesso!", "sucesso")
+
 
 
         cursor.close()
@@ -654,25 +734,22 @@ def excluir_bibliotecario(id_bibliotecario):
         conexao = conectar()
         cursor = conexao.cursor()
 
-
         cursor.execute(
             "DELETE FROM bibliotecario WHERE id_bibliotecario = %s",
             (id_bibliotecario,)
         )
 
-
         conexao.commit()
-
+        flash("Bibliotecário excluído com sucesso!", "sucesso")
 
         cursor.close()
         conexao.close()
 
-
-        return redirect("/bibliotecarios")
-
-
     except Exception as erro:
-        return f"Erro ao excluir bibliotecário: {erro}"
+        flash("Não foi possível excluir o bibliotecário. Verifique se ele possui empréstimos cadastrados.", "erro")
+
+    # Colocando o return aqui no final, ele será executado tanto no sucesso quanto na exceção
+    return redirect("/bibliotecarios")
 
 if __name__ == "__main__":
     app.run(debug=True)
