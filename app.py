@@ -466,9 +466,6 @@ def cadastrar_bibliotecario():
             conexao.close()
 
 
-# =========================
-# EDITAR BIBLIOTECÁRIO
-# =========================
 
 @app.route("/bibliotecarios/editar/<int:id_bibliotecario>")
 def editar_bibliotecario(id_bibliotecario):
@@ -508,10 +505,6 @@ def editar_bibliotecario(id_bibliotecario):
         if conexao and conexao.is_connected():
             conexao.close()
 
-
-# =========================
-# ATUALIZAR BIBLIOTECÁRIO
-# =========================
 
 @app.route(
     "/bibliotecarios/atualizar/<int:id_bibliotecario>",
@@ -570,9 +563,7 @@ def atualizar_bibliotecario(id_bibliotecario):
             conexao.close()
 
 
-# =========================
-# EXCLUIR BIBLIOTECÁRIO
-# =========================
+
 
 @app.route("/bibliotecarios/excluir/<int:id_bibliotecario>")
 def excluir_bibliotecario(id_bibliotecario):
