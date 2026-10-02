@@ -399,29 +399,43 @@ def listar_bibliotecarios():
     try:
         conexao = conectar()
         cursor = conexao.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM bibliotecario")
+
+        cursor.execute("SELECT * FROM bibliotecario ORDER BY nome")
         bibliotecarios = cursor.fetchall()
+
         cursor.close()
-        return render_template("bibliotecarios.html", bibliotecarios=bibliotecarios)
+
+        return render_template(
+            "bibliotecarios.html",
+            bibliotecarios=bibliotecarios
+        )
+
     except Exception as erro:
         return f"Erro ao listar bibliotecários: {erro}"
+
     finally:
         if conexao and conexao.is_connected():
             conexao.close()
+
 
 @app.route("/bibliotecarios/novo")
 def formulario_bibliotecario():
     return render_template("bibliotecario_form.html")
 
+
 @app.route("/bibliotecarios/cadastrar", methods=["POST"])
 def cadastrar_bibliotecario():
     conexao = None
+
     try:
         nome = request.form["nome"]
         email = request.form["email"]
 
         if len(nome.strip()) < 3:
-            flash("O nome do bibliotecário deve ter pelo menos 3 caracteres.", "erro")
+            flash(
+                "O nome do bibliotecário deve ter pelo menos 3 caracteres.",
+                "erro"
+            )
             return redirect("/bibliotecarios/novo")
 
         if "@" not in email or "." not in email:
@@ -431,11 +445,14 @@ def cadastrar_bibliotecario():
         conexao = conectar()
         cursor = conexao.cursor()
 
-        sql = "INSERT INTO bibliotecario (nome, email) VALUES (%s, %s)"
-        valores = (nome, email)
+        sql = """
+            INSERT INTO bibliotecario (nome, email)
+            VALUES (%s, %s)
+        """
 
-        cursor.execute(sql, valores)
+        cursor.execute(sql, (nome, email))
         conexao.commit()
+
         cursor.close()
 
         flash("Bibliotecário cadastrado com sucesso!", "sucesso")
@@ -443,68 +460,151 @@ def cadastrar_bibliotecario():
 
     except Exception as erro:
         return f"Erro ao cadastrar bibliotecário: {erro}"
+
     finally:
         if conexao and conexao.is_connected():
             conexao.close()
 
-@app.route("/bibliotecarios/editar/")
+
+# =========================
+# EDITAR BIBLIOTECÁRIO
+# =========================
+
+@app.route("/bibliotecarios/editar/<int:id_bibliotecario>")
 def editar_bibliotecario(id_bibliotecario):
     conexao = None
+
     try:
         conexao = conectar()
         cursor = conexao.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM bibliotecario WHERE id_bibliotecario = %s", (id_bibliotecario,))
+
+        cursor.execute(
+            """
+            SELECT *
+            FROM bibliotecario
+            WHERE id_bibliotecario = %s
+            """,
+            (id_bibliotecario,)
+        )
+
         bibliotecario = cursor.fetchone()
+
         cursor.close()
-        return render_template("bibliotecario_editar.html", bibliotecario=bibliotecario)
+
+        if not bibliotecario:
+            flash("Bibliotecário não encontrado.", "erro")
+            return redirect("/bibliotecarios")
+
+        return render_template(
+            "bibliotecario_editar.html",
+            bibliotecario=bibliotecario
+        )
+
     except Exception as erro:
-        return f"Erro ao carregar bibliotecário: {erro}"
+        flash(f"Erro ao carregar bibliotecário: {erro}", "erro")
+        return redirect("/bibliotecarios")
+
     finally:
         if conexao and conexao.is_connected():
             conexao.close()
 
-@app.route("/bibliotecarios/atualizar/", methods=["POST"])
+
+# =========================
+# ATUALIZAR BIBLIOTECÁRIO
+# =========================
+
+@app.route(
+    "/bibliotecarios/atualizar/<int:id_bibliotecario>",
+    methods=["POST"]
+)
 def atualizar_bibliotecario(id_bibliotecario):
     conexao = None
+
     try:
         nome = request.form["nome"]
         email = request.form["email"]
 
+        if len(nome.strip()) < 3:
+            flash(
+                "O nome do bibliotecário deve ter pelo menos 3 caracteres.",
+                "erro"
+            )
+            return redirect(
+                f"/bibliotecarios/editar/{id_bibliotecario}"
+            )
+
+        if "@" not in email or "." not in email:
+            flash("Informe um e-mail válido.", "erro")
+            return redirect(
+                f"/bibliotecarios/editar/{id_bibliotecario}"
+            )
+
         conexao = conectar()
         cursor = conexao.cursor()
 
-        sql = "UPDATE bibliotecario SET nome = %s, email = %s WHERE id_bibliotecario = %s"
-        valores = (nome, email, id_bibliotecario)
+        sql = """
+            UPDATE bibliotecario
+            SET nome = %s,
+                email = %s
+            WHERE id_bibliotecario = %s
+        """
 
-        cursor.execute(sql, valores)
+        cursor.execute(
+            sql,
+            (nome, email, id_bibliotecario)
+        )
+
         conexao.commit()
+
         cursor.close()
 
         flash("Bibliotecário atualizado com sucesso!", "sucesso")
         return redirect("/bibliotecarios")
 
     except Exception as erro:
-        return f"Erro ao atualizar bibliotecário: {erro}"
+        flash(f"Erro ao atualizar bibliotecário: {erro}", "erro")
+        return redirect("/bibliotecarios")
+
     finally:
         if conexao and conexao.is_connected():
             conexao.close()
 
-@app.route("/bibliotecarios/excluir/")
+
+# =========================
+# EXCLUIR BIBLIOTECÁRIO
+# =========================
+
+@app.route("/bibliotecarios/excluir/<int:id_bibliotecario>")
 def excluir_bibliotecario(id_bibliotecario):
     conexao = None
+
     try:
         conexao = conectar()
         cursor = conexao.cursor()
-        cursor.execute("DELETE FROM bibliotecario WHERE id_bibliotecario = %s", (id_bibliotecario,))
+
+        cursor.execute(
+            """
+            DELETE FROM bibliotecario
+            WHERE id_bibliotecario = %s
+            """,
+            (id_bibliotecario,)
+        )
+
         conexao.commit()
+
         cursor.close()
 
         flash("Bibliotecário excluído com sucesso!", "sucesso")
         return redirect("/bibliotecarios")
 
     except Exception as erro:
-        flash("Não foi possível excluir o bibliotecário. Verifique se ele possui empréstimos cadastrados.", "erro")
+        flash(
+            "Não foi possível excluir o bibliotecário. "
+            "Verifique se ele possui empréstimos cadastrados.",
+            "erro"
+        )
         return redirect("/bibliotecarios")
+
     finally:
         if conexao and conexao.is_connected():
             conexao.close()
