@@ -96,14 +96,14 @@ VALUES
 ('Cláudia', 'ClaudiaCEMAP@escola.pr.gov.br', 'ClaudIA', 'Professor', 'Ativo', 1, 1, 1),
 ('Rodrigo', 'Rodrigo.Dias@escola.pr.gov.br', 'R0dr1go', 'Professor', 'Ativo', 1, 2, 1),
 ('Nayara', 'Nay.Oliveira@gmail.com', 'senha123', 'Professor', 'Ativo', 1, 3, 1),
-('Eva', 'eva.pitarelli@escola.pr.gov.br', 'Loh1810', 'Professor', 'Ativo', 1, 4, 1),
-('Tyago', 'Tyago@escola.pr.gov.br', 'Ty@g0', 'Professor', 'Ativo', 1, 5, 1);
+('Eva', 'eva.pitarelli@escola.pr.gov.br', 'Loh1810', 'Aluno(a)', 'Ativo', 1, 4, 1),
+('Enzo', 'Tyago@escola.pr.gov.br', 'Ty@g0', 'Aluno(a)', 'Ativo', 1, 5, 1);
 
 INSERT INTO emprestimo (id_aluno, id_livro, id_bibliotecario, data_emprestimo, data_prevista_devolucao, data_devolucao, status)
 VALUES ('1','2', '3', '2026-07-09', '2026-08-09', '2026-08-09', 'devolvido'),
 ('2','1','3', '2026-08-07', '2026-09-07', '2026-09-03', 'devolvido'),
 ('3','4', '3', '2026-07-09', '2026-08-09', '2026-08-09', 'devolvido'),
-('4','5', '2', '2026-07-07', '2026-08-07', '2026-08-09', 'devolvido atrasado'),
+('4','5', '2', '2026-07-07', '2026-08-07', '2026-08-09', 'disponível'),
 ('1','2', '3', '2026-07-07', '2026-08-08', '2026-08-08', 'devolvido');
 
 CREATE USER 'biblioteca_user1'@'localhost' IDENTIFIED BY 'projeto1';

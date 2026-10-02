@@ -11,33 +11,27 @@ def conectar():
 
 @app.route("/")
 def index():
-     if "id_usuario" not in session:
-            return redirect("/login")
+    if "id_usuario" not in session:
+        return redirect("/login")
 
     try:
         conexao = conectar()
         cursor = conexao.cursor(dictionary=True)
 
-
         cursor.execute("SELECT COUNT(*) AS total FROM aluno")
         total_alunos = cursor.fetchone()["total"]
-
 
         cursor.execute("SELECT COUNT(*) AS total FROM livro")
         total_livros = cursor.fetchone()["total"]
 
-
         cursor.execute("SELECT COUNT(*) AS total FROM livro WHERE status = 'Disponível'")
         total_disponiveis = cursor.fetchone()["total"]
-
 
         cursor.execute("SELECT COUNT(*) AS total FROM emprestimo WHERE status = 'Emprestado'")
         total_emprestimos = cursor.fetchone()["total"]
 
-
         cursor.close()
         conexao.close()
-
 
         return render_template(
             "index.html",
@@ -46,7 +40,6 @@ def index():
             total_disponiveis=total_disponiveis,
             total_emprestimos=total_emprestimos
         )
-
 
     except Exception as erro:
         flash(f"Erro ao carregar página inicial: {erro}", "erro")
@@ -57,8 +50,6 @@ def index():
             total_disponiveis=0,
             total_emprestimos=0
         )
-
-
 @app.route("/alunos")
 def listar_alunos():
     try:
@@ -303,23 +294,38 @@ def cadastrar_livro():
         if conexao and conexao.is_connected():
             conexao.close()
 
-@app.route("/livros/editar/")
+@app.route("/livros/editar/<int:id_livro>")
 def editar_livro(id_livro):
     conexao = None
     try:
         conexao = conectar()
         cursor = conexao.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM livro WHERE id_livro = %s", (id_livro,))
+
+        cursor.execute(
+            "SELECT * FROM livro WHERE id_livro = %s",
+            (id_livro,)
+        )
+
         livro = cursor.fetchone()
+
         cursor.close()
+
+        if not livro:
+            flash("Livro não encontrado.", "erro")
+            return redirect("/livros")
+
         return render_template("livro_editar.html", livro=livro)
+
     except Exception as erro:
-        return f"Erro ao carregar livro: {erro}"
+        flash(f"Erro ao carregar livro: {erro}", "erro")
+        return redirect("/livros")
+
     finally:
         if conexao and conexao.is_connected():
             conexao.close()
 
-@app.route("/livros/atualizar/", methods=["POST"])
+
+@app.route("/livros/atualizar/<int:id_livro>", methods=["POST"])
 def atualizar_livro(id_livro):
     conexao = None
     try:
@@ -333,12 +339,18 @@ def atualizar_livro(id_livro):
 
         sql = """
             UPDATE livro
-            SET titulo = %s, autor = %s, categoria = %s, status = %s
+            SET titulo = %s,
+                autor = %s,
+                categoria = %s,
+                status = %s
             WHERE id_livro = %s
         """
-        valores = (titulo, autor, categoria, status, id_livro)
 
-        cursor.execute(sql, valores)
+        cursor.execute(
+            sql,
+            (titulo, autor, categoria, status, id_livro)
+        )
+
         conexao.commit()
         cursor.close()
 
@@ -346,18 +358,26 @@ def atualizar_livro(id_livro):
         return redirect("/livros")
 
     except Exception as erro:
-        return f"Erro ao atualizar livro: {erro}"
+        flash(f"Erro ao atualizar livro: {erro}", "erro")
+        return redirect("/livros")
+
     finally:
         if conexao and conexao.is_connected():
             conexao.close()
 
-@app.route("/livros/excluir/")
+
+@app.route("/livros/excluir/<int:id_livro>")
 def excluir_livro(id_livro):
     conexao = None
     try:
         conexao = conectar()
         cursor = conexao.cursor()
-        cursor.execute("DELETE FROM livro WHERE id_livro = %s", (id_livro,))
+
+        cursor.execute(
+            "DELETE FROM livro WHERE id_livro = %s",
+            (id_livro,)
+        )
+
         conexao.commit()
         cursor.close()
 
@@ -367,9 +387,11 @@ def excluir_livro(id_livro):
     except Exception as erro:
         flash("Não foi possível excluir o livro. Verifique se ele possui empréstimos cadastrados.", "erro")
         return redirect("/livros")
+
     finally:
         if conexao and conexao.is_connected():
             conexao.close()
+
 
 @app.route("/bibliotecarios")
 def listar_bibliotecarios():
@@ -487,7 +509,7 @@ def excluir_bibliotecario(id_bibliotecario):
         if conexao and conexao.is_connected():
             conexao.close()
 
-app.route("/emprestimos")
+@app.route("/emprestimos")
 def listar_emprestimos():
     try:
         status = request.args.get("status", "")
@@ -629,37 +651,58 @@ def cadastrar_emprestimo():
         if conexao and conexao.is_connected():
             conexao.close()
 
-@app.route("/emprestimos/devolver/")
+@app.route("/emprestimos/devolver/<int:id_emprestimo>")
 def devolver_livro(id_emprestimo):
     conexao = None
     try:
         conexao = conectar()
         cursor = conexao.cursor(dictionary=True)
 
-        cursor.execute("SELECT id_livro FROM emprestimo WHERE id_emprestimo = %s", (id_emprestimo,))
+        cursor.execute(
+            "SELECT id_livro, status FROM emprestimo WHERE id_emprestimo = %s",
+            (id_emprestimo,)
+        )
+
         emprestimo = cursor.fetchone()
 
-        if emprestimo:
-            id_livro = emprestimo["id_livro"]
+        if not emprestimo:
+            flash("Empréstimo não encontrado.", "erro")
+            cursor.close()
+            return redirect("/emprestimos")
 
-            cursor.execute("""
-                UPDATE emprestimo
-                SET data_devolucao = CURDATE(), status = 'Devolvido'
-                WHERE id_emprestimo = %s
-            """, (id_emprestimo,))
+        if emprestimo["status"] == "Devolvido":
+            flash("Este empréstimo já foi devolvido.", "erro")
+            cursor.close()
+            return redirect("/emprestimos")
 
-            cursor.execute("""
-                UPDATE livro SET status = 'Disponível' WHERE id_livro = %s
-            """, (id_livro,))
+        id_livro = emprestimo["id_livro"]
 
-            conexao.commit()
-            flash("Livro devolvido com sucesso!", "sucesso")
+        cursor.execute("""
+            UPDATE emprestimo
+            SET data_devolucao = CURDATE(),
+                status = 'Devolvido'
+            WHERE id_emprestimo = %s
+        """, (id_emprestimo,))
 
+        cursor.execute("""
+            UPDATE livro
+            SET status = 'Disponível'
+            WHERE id_livro = %s
+        """, (id_livro,))
+
+        conexao.commit()
         cursor.close()
+
+        flash("Livro devolvido com sucesso!", "sucesso")
         return redirect("/emprestimos")
 
     except Exception as erro:
-        return f"Erro ao devolver livro: {erro}"
+        if conexao:
+            conexao.rollback()
+
+        flash(f"Erro ao devolver livro: {erro}", "erro")
+        return redirect("/emprestimos")
+
     finally:
         if conexao and conexao.is_connected():
             conexao.close()
@@ -723,11 +766,9 @@ def autenticar():
     email = request.form["email"]
     senha = request.form["senha"]
 
-
     try:
         conexao = conectar()
         cursor = conexao.cursor(dictionary=True)
-
 
         sql = """
             SELECT *
@@ -737,20 +778,16 @@ def autenticar():
               AND status = 'Ativo'
         """
 
-
         cursor.execute(sql, (email, senha))
         usuario = cursor.fetchone()
 
-
         cursor.close()
         conexao.close()
-
 
         if usuario:
             session["id_usuario"] = usuario["id_usuario"]
             session["nome"] = usuario["nome"]
             session["perfil"] = usuario["perfil"]
-
 
             flash("Login realizado com sucesso!", "sucesso")
             return redirect("/")
@@ -758,19 +795,29 @@ def autenticar():
             flash("E-mail ou senha inválidos.", "erro")
             return redirect("/login")
 
-
     except Exception as erro:
         flash(f"Erro ao realizar login: {erro}", "erro")
         return redirect("/login")
-
-
-
 
 @app.route("/logout")
 def logout():
     session.clear()
     flash("Você saiu do sistema.", "sucesso")
     return redirect("/login")
+
+@app.route("/usuarios")
+def usuarios():
+    conexao = conectar()
+    cursor = conexao.cursor(dictionary=True)
+
+    sql = "SELECT * FROM usuario"
+    cursor.execute(sql)
+    usuarios = cursor.fetchall()
+
+    cursor.close()
+    conexao.close()
+
+    return render_template("usuarios.html", usuarios=usuarios)
 
 if __name__ == "__main__":
     app.run(debug=True)
